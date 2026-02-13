@@ -1,5 +1,5 @@
 <?php
-// login.php - (Royal Premium Login V2.0)
+// login.php - (Royal Premium Login V3.0 - Secure)
 session_start();
 require 'config.php';
 
@@ -9,19 +9,29 @@ if (isset($_SESSION['user_id'])) {
 }
 
 $error = '';
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $username = $conn->real_escape_string($_POST['username']);
-    $password = $_POST['password'];
 
-    $sql = "SELECT * FROM users WHERE username = '$username'";
-    $result = $conn->query($sql);
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $user_input = $_POST['username'];
+    $pass_input = $_POST['password'];
+
+    // الحماية باستخدام Prepared Statements
+    $stmt = $conn->prepare("SELECT id, username, password, full_name, role FROM users WHERE username = ?");
+    $stmt->bind_param("s", $user_input);
+    $stmt->execute();
+    $result = $stmt->get_result();
 
     if ($result->num_rows > 0) {
         $user = $result->fetch_assoc();
-        if ($password == $user['password'] || password_verify($password, $user['password'])) {
+        // التحقق الآمن فقط (المشفر)
+        if (password_verify($pass_input, $user['password'])) {
             $_SESSION['user_id'] = $user['id'];
+            $_SESSION['username'] = $user['username']; // توحيد المتغير
             $_SESSION['name'] = $user['full_name'];
             $_SESSION['role'] = $user['role'];
+            
+            // تجديد معرف الجلسة لمنع Session Fixation
+            session_regenerate_id(true);
+            
             header("Location: dashboard.php");
             exit();
         } else {
@@ -30,6 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     } else {
         $error = "المستخدم غير موجود";
     }
+    $stmt->close();
 }
 ?>
 <!DOCTYPE html>
@@ -56,7 +67,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             justify-content: center;
         }
 
-        /* Particles Background Container */
         #particles-js {
             position: absolute; width: 100%; height: 100%;
             background-color: var(--bg-dark);
@@ -170,7 +180,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <div class="royal-card floating">
             <div class="logo-area">
                 <span class="logo-text">ARAB EAGLES</span>
-                <span class="logo-sub">Smart Management System</span>
+                <span class="logo-sub">Smart Management System V3.0</span>
             </div>
 
             <?php if($error): ?>
@@ -188,7 +198,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             </form>
             
             <p style="color: #444; font-size: 0.7rem; margin-top: 30px;">
-                V3.0 &copy; <?php echo date('Y'); ?> Arab Eagles Portfolio
+                Secured by Royal Tech &copy; <?php echo date('Y'); ?>
             </p>
         </div>
     </div>
@@ -197,13 +207,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <script>
         particlesJS("particles-js", {
             "particles": {
-                "number": { "value": 80, "density": { "enable": true, "value_area": 800 } },
+                "number": { "value": 60, "density": { "enable": true, "value_area": 800 } },
                 "color": { "value": "#d4af37" },
                 "shape": { "type": "circle" },
                 "opacity": { "value": 0.5, "random": true },
                 "size": { "value": 3, "random": true },
                 "line_linked": { "enable": true, "distance": 150, "color": "#d4af37", "opacity": 0.2, "width": 1 },
-                "move": { "enable": true, "speed": 2, "direction": "none", "random": true, "straight": false, "out_mode": "out", "bounce": false }
+                "move": { "enable": true, "speed": 1.5, "direction": "none", "random": false, "straight": false, "out_mode": "out", "bounce": false }
             },
             "interactivity": {
                 "detect_on": "canvas",
