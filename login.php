@@ -1,5 +1,5 @@
 <?php
-// login.php - (Royal Premium Login V3.0 - Secure)
+// login.php - (Royal Premium Login V3.1 - Secure & Brute-Force Protected)
 session_start();
 require 'config.php';
 
@@ -8,9 +8,24 @@ if (isset($_SESSION['user_id'])) {
     exit();
 }
 
-$error = '';
+// --- Brute-Force Protection ---
+$max_attempts = 5;
+$lockout_time = 300; // 5 minutes in seconds
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+if (isset($_SESSION['login_attempts']) && $_SESSION['login_attempts'] >= $max_attempts) {
+    if (time() - $_SESSION['last_attempt_time'] < $lockout_time) {
+        $error = "تم حظر محاولات تسجيل الدخول مؤقتاً. يرجى المحاولة مرة أخرى بعد 5 دقائق.";
+    } else {
+        // Reset attempts after lockout period
+        unset($_SESSION['login_attempts']);
+        unset($_SESSION['last_attempt_time']);
+    }
+}
+// --- End Protection ---
+
+$error = $error ?? '';
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && !isset($_SESSION['login_attempts']) || (isset($_SESSION['login_attempts']) && $_SESSION['login_attempts'] < $max_attempts)) {
     $user_input = $_POST['username'];
     $pass_input = $_POST['password'];
 
@@ -24,8 +39,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $user = $result->fetch_assoc();
         // التحقق الآمن فقط (المشفر)
         if (password_verify($pass_input, $user['password'])) {
+            // Successful login: reset attempts
+            unset($_SESSION['login_attempts']);
+            unset($_SESSION['last_attempt_time']);
+            
             $_SESSION['user_id'] = $user['id'];
-            $_SESSION['username'] = $user['username']; // توحيد المتغير
+            $_SESSION['username'] = $user['username'];
             $_SESSION['name'] = $user['full_name'];
             $_SESSION['role'] = $user['role'];
             
@@ -35,7 +54,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             header("Location: dashboard.php");
             exit();
         } else {
-            $error = "كلمة المرور غير صحيحة";
+            // Failed login attempt
+            if (!isset($_SESSION['login_attempts'])) {
+                $_SESSION['login_attempts'] = 1;
+            } else {
+                $_SESSION['login_attempts']++;
+            }
+            $_SESSION['last_attempt_time'] = time();
+            $remaining_attempts = $max_attempts - $_SESSION['login_attempts'];
+            $error = "كلمة المرور غير صحيحة. تبقى لديك $remaining_attempts محاولات.";
         }
     } else {
         $error = "المستخدم غير موجود";
@@ -180,7 +207,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <div class="royal-card floating">
             <div class="logo-area">
                 <span class="logo-text">ARAB EAGLES</span>
-                <span class="logo-sub">Smart Management System V3.0</span>
+                <span class="logo-sub">Smart Management System V3.1</span>
             </div>
 
             <?php if($error): ?>
@@ -194,7 +221,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <div class="input-group">
                     <input type="password" name="password" placeholder="كلمة المرور" required>
                 </div>
-                <button type="submit" class="btn-royal">دخول للنظام</button>
+                <button type="submit" class="btn-royal" <?php if (isset($_SESSION['login_attempts']) && $_SESSION['login_attempts'] >= $max_attempts) echo 'disabled'; ?>>
+                    <?php echo (isset($_SESSION['login_attempts']) && $_SESSION['login_attempts'] >= $max_attempts) ? 'محظور مؤقتاً' : 'دخول للنظام'; ?>
+                </button>
             </form>
             
             <p style="color: #444; font-size: 0.7rem; margin-top: 30px;">

@@ -1,5 +1,5 @@
 <?php
-// header.php - (Royal Responsive Header V19.0 - Aggressive PWA Install)
+// header.php - (Royal Responsive Header V19.1 - CRITICAL FIX + Inventory Links)
 
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once 'config.php';
@@ -194,6 +194,13 @@ if($current_id){
         <div class="nav-links">
             <a href="dashboard.php" class="nav-item <?php echo $current_page=='dashboard.php'?'active':''; ?>"><i class="fa-solid fa-house"></i> الرئيسية</a>
             <?php if(!in_array($role, ['driver', 'accountant'])): ?><a href="add_job.php" class="nav-item btn-new-job"><i class="fa-solid fa-plus"></i> أمر شغل</a><?php endif; ?>
+            
+            <!-- INVENTORY LINKS FOR DESKTOP -->
+            <?php if(in_array($role, ['admin', 'manager', 'production'])): ?>
+                <a href="inventory.php" class="nav-item <?php echo $current_page=='inventory.php'?'active':''; ?>"><i class="fa-solid fa-boxes-stacked"></i> المخزون</a>
+                <a href="warehouses.php" class="nav-item <?php echo $current_page=='warehouses.php'?'active':''; ?>"><i class="fa-solid fa-warehouse"></i> المخازن</a>
+            <?php endif; ?>
+
             <?php if(in_array($role, ['admin', 'manager', 'sales', 'accountant'])): ?><a href="quotes.php" class="nav-item <?php echo $current_page=='quotes.php'?'active':''; ?>"><i class="fa-solid fa-file-contract"></i> العروض</a><?php endif; ?>
             <?php if(in_array($role, ['admin', 'manager', 'accountant'])): ?>
                 <a href="finance.php" class="nav-item <?php echo $current_page=='finance.php'?'active':''; ?>"><i class="fa-solid fa-coins"></i> المالية</a>
@@ -239,17 +246,24 @@ if($current_id){
 
         <a href="dashboard.php" class="m-link <?php echo $current_page=='dashboard.php'?'active':''; ?>"><i class="fa-solid fa-house"></i> الرئيسية</a>
         <?php if(!in_array($role, ['driver', 'accountant'])): ?><a href="add_job.php" class="m-link" style="border-color:var(--gold-primary); background:rgba(212, 175, 55, 0.1);"><i class="fa-solid fa-plus"></i> أمر شغل جديد</a><?php endif; ?>
-        <?php if(in_array($role, ['admin', 'manager', 'sales'])): ?><a href="quotes.php" class="m-link"><i class="fa-solid fa-file-contract"></i> عروض الأسعار</a><?php endif; ?>
+        
+        <!-- INVENTORY LINKS FOR MOBILE -->
+        <?php if(in_array($role, ['admin', 'manager', 'production'])): ?>
+            <a href="inventory.php" class="m-link <?php echo $current_page=='inventory.php'?'active':''; ?>"><i class="fa-solid fa-boxes-stacked"></i> المخزون</a>
+            <a href="warehouses.php" class="m-link <?php echo $current_page=='warehouses.php'?'active':''; ?>"><i class="fa-solid fa-warehouse"></i> المخازن</a>
+        <?php endif; ?>
+
+        <?php if(in_array($role, ['admin', 'manager', 'sales'])): ?><a href="quotes.php" class="m-link <?php echo $current_page=='quotes.php'?'active':''; ?>"><i class="fa-solid fa-file-contract"></i> عروض الأسعار</a><?php endif; ?>
         <?php if(in_array($role, ['admin', 'manager', 'accountant'])): ?>
-            <a href="finance.php" class="m-link"><i class="fa-solid fa-coins"></i> الإدارة المالية</a>
-            <a href="invoices.php" class="m-link"><i class="fa-solid fa-file-invoice"></i> الفواتير</a>
+            <a href="finance.php" class="m-link <?php echo $current_page=='finance.php'?'active':''; ?>"><i class="fa-solid fa-coins"></i> الإدارة المالية</a>
+            <a href="invoices.php" class="m-link <?php echo $current_page=='invoices.php'?'active':''; ?>"><i class="fa-solid fa-file-invoice"></i> الفواتير</a>
         <?php endif; ?>
         <?php if(in_array($role, ['admin', 'sales', 'manager'])): ?>
-            <a href="clients.php" class="m-link"><i class="fa-solid fa-users"></i> العملاء</a>
-            <a href="suppliers.php" class="m-link"><i class="fa-solid fa-truck-field"></i> الموردين</a>
+            <a href="clients.php" class="m-link <?php echo $current_page=='clients.php'?'active':''; ?>"><i class="fa-solid fa-users"></i> العملاء</a>
+            <a href="suppliers.php" class="m-link <?php echo $current_page=='suppliers.php'?'active':''; ?>"><i class="fa-solid fa-truck-field"></i> الموردين</a>
         <?php endif; ?>
         <?php if($role == 'admin'): ?>
-            <a href="users.php" class="m-link"><i class="fa-solid fa-users-gear"></i> إدارة الموظفين</a>
+            <a href="users.php" class="m-link <?php echo $current_page=='users.php'?'active':''; ?>"><i class="fa-solid fa-users-gear"></i> إدارة الموظفين</a>
         <?php endif; ?>
         
         <button id="installAppBtnMobile" class="m-link" style="width:100%; border:none; background:#2ecc71; color:#fff; display:none; justify-content:flex-start; text-align:right;" onclick="installPWA()">

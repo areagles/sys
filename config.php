@@ -1,20 +1,32 @@
 <?php
-// config.php - إعدادات الاتصال (Secure Mode)
+// config.php - إعدادات الاتصال (نسخة خالية من الأخطاء)
+
+// تعريف رابط النظام الأساسي
+if (!defined('SYSTEM_URL')) {
+    define('SYSTEM_URL', 'https://work.areagles.com'); 
+}
+
 $servername = "localhost";
 $username = "u159629331_work"; 
 $password = "AllahAkbar@1986"; 
 $dbname = "u159629331_wo"; 
 
-// إخفاء الأخطاء الظاهرة للمستخدم لحماية المسار
-error_reporting(0);
-mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+// [تصحيح هام]
+// نتحقق أولاً إذا كانت الجلسة لم تبدأ بعد قبل محاولة تغيير الإعدادات
+// هذا يمنع ظهور الخطأ: Session ini settings cannot be changed...
+if (session_status() == PHP_SESSION_NONE && !headers_sent()) {
+    // محاولة مشاركة الجلسة (اختياري، ويمكن تعطيله إذا استمرت المشاكل)
+    @ini_set('session.cookie_domain', '.areagles.com');
+}
 
-try {
-    $conn = new mysqli($servername, $username, $password, $dbname);
-    $conn->set_charset("utf8mb4");
-} catch (Exception $e) {
-    // تسجيل الخطأ في ملف لوج داخلي بدلاً من عرضه
-    error_log($e->getMessage());
-    die("⚠️ نأسف، يوجد عطل فني في الاتصال بقاعدة البيانات. يرجى المحاولة لاحقاً.");
+// إنشاء الاتصال
+$conn = new mysqli($servername, $username, $password, $dbname);
+$conn->set_charset("utf8mb4");
+
+// التحقق من الأخطاء
+if ($conn->connect_error) {
+    // تسجيل الخطأ في ملف النظام بدلاً من إظهاره للمستخدم
+    error_log("Connection failed: " . $conn->connect_error);
+    die("⚠️ نأسف، النظام في وضع الصيانة حالياً (خطأ اتصال).");
 }
 ?>

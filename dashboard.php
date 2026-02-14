@@ -1,5 +1,5 @@
 <?php
-// dashboard.php - (Royal Phantom V26.2 - Priority Feature & Full Workflow)
+// dashboard.php - (Royal Phantom V26.4 - CRITICAL FIX + Inventory Shortcuts)
 
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
@@ -100,10 +100,12 @@ if(isset($_GET['action']) && $can_edit) {
     if ($act == 'reject') {
         $reason = $conn->real_escape_string($_GET['reason'] ?? 'تم الرفض من الإدارة');
         if($type == 'order') {
-            $sql = "UPDATE job_orders SET status = 'cancelled', current_stage = 'cancelled', notes = CONCAT(IFNULL(notes,''), '\n[سبب الرفض: $reason]') WHERE id = $id";
+            $sql = "UPDATE job_orders SET status = 'cancelled', current_stage = 'cancelled', notes = CONCAT(IFNULL(notes,''), '
+[سبب الرفض: $reason]') WHERE id = $id";
             $conn->query($sql);
         } elseif ($type == 'quote') {
-            $sql = "UPDATE quotes SET status = 'rejected', notes = CONCAT(IFNULL(notes,''), '\n[سبب الرفض: $reason]') WHERE id = $id";
+            $sql = "UPDATE quotes SET status = 'rejected', notes = CONCAT(IFNULL(notes,''), '
+[سبب الرفض: $reason]') WHERE id = $id";
             $conn->query($sql);
         }
         header("Location: dashboard.php?msg=rejected"); exit;
@@ -214,8 +216,8 @@ if (isset($_GET['live_updates'])) {
             </div>
         </div>
         <div class="ph-card-body" onclick="window.location.href='job_details.php?id=<?php echo $row['id']; ?>'">
-            <h3 class="ph-job-title"><?php echo $row['job_name']; ?></h3>
-            <div class="ph-client"><i class="fa-regular fa-user"></i> <?php echo $row['client_name']; ?></div>
+            <h3 class="ph-job-title"><?php echo htmlspecialchars($row['job_name']); ?></h3>
+            <div class="ph-client"><i class="fa-regular fa-user"></i> <?php echo htmlspecialchars($row['client_name']); ?></div>
             <div class="ph-prog-container">
                 <div class="ph-prog-labels">
                     <span><?php echo $st_label; ?></span>
@@ -265,7 +267,7 @@ if (isset($_GET['live_updates'])) {
         ?>
         <div class="ticker-item">
             <span class="dot" style="background:<?php echo $col; ?>"></span>
-            <span><?php echo $txt; ?>: <?php echo $al['job_name']; ?></span>
+            <span><?php echo htmlspecialchars($txt . ': ' . $al['job_name']); ?></span>
             <a href="job_details.php?id=<?php echo $al['id']; ?>">عرض</a>
         </div>
         <?php endforeach; ?>
@@ -461,7 +463,7 @@ require 'header.php';
         .ph-filters { flex-direction: column; align-items: stretch; gap: 10px; }
         .ph-search { width: 100%; }
         .btn-archive { margin-right: 0; justify-content: center; }
-        .btn-add { justify-content: center; }
+        .btn-add { margin-left: 0; justify-content: center; }
     }
 </style>
 
@@ -499,7 +501,7 @@ require 'header.php';
 
             <?php while($o = $n_orders->fetch_assoc()): ?>
             <div style="display:flex; justify-content:space-between; align-items:center; background:#111; padding:12px; border-radius:8px; border:1px solid #333;">
-                <span style="color:#2ecc71; font-weight:bold;"><i class="fa-solid fa-industry"></i> أمر شغل #<?php echo $o['id']; ?>: <?php echo $o['job_name']; ?></span>
+                <span style="color:#2ecc71; font-weight:bold;"><i class="fa-solid fa-industry"></i> أمر شغل #<?php echo $o['id']; ?>: <?php echo htmlspecialchars($o['job_name']); ?></span>
                 <div style="display:flex; gap:8px;">
                     <a href="dashboard.php?action=approve&type=order&id=<?php echo $o['id']; ?>" class="ph-btn" style="font-size:0.85rem; background:linear-gradient(135deg, #27ae60, #2ecc71); color:#fff; border:none;">اعتماد ✅</a>
                     <button onclick="rejectItem('order', <?php echo $o['id']; ?>)" class="ph-btn" style="font-size:0.85rem; background:#c0392b; border-color:#c0392b; color:#fff;">رفض ❌</button>
@@ -548,14 +550,23 @@ require 'header.php';
             <option value="social" <?php echo ($_GET['type']??'')=='social'?'selected':''; ?>>📱 سوشيال</option>
         </select>
         
-        <input type="text" name="q" class="ph-search" placeholder="بحث سريع..." value="<?php echo htmlspecialchars($search_query); ?>">
+        <input type="text" name="q" class="ph-search" placeholder="بحث سريع..." value="<?php echo htmlspecialchars($_GET['q'] ?? ''); ?>">
         
         <a href="?status=completed" class="btn-archive <?php echo ($_GET['status']??'')=='completed'?'active':''; ?>">
             <i class="fa-solid fa-box-archive"></i> الأرشيف
         </a>
 
+        <?php if(in_array($my_role, ['admin', 'manager', 'production'])): ?>
+            <a href="inventory.php" class="btn-archive">
+                <i class="fa-solid fa-boxes-stacked"></i> المخزون
+            </a>
+            <a href="warehouses.php" class="btn-archive">
+                <i class="fa-solid fa-warehouse"></i> المخازن
+            </a>
+        <?php endif; ?>
+
         <?php if(in_array($my_role, ['admin', 'manager', 'sales'])): ?>
-            <a href="add_job.php" class="btn-add"><i class="fa-solid fa-plus"></i> إضافة</a>
+            <a href="add_job.php" class="btn-add" style="margin-left: auto;"><i class="fa-solid fa-plus"></i> إضافة</a>
         <?php endif; ?>
     </form>
 
@@ -622,8 +633,8 @@ require 'header.php';
                 document.getElementById('live-grid').innerHTML = data.grid;
 
                 const ticker = document.getElementById('live-ticker');
-                if(data.ticker.trim()){
-                    if(ticker.innerHTML != data.ticker) ticker.innerHTML = data.ticker;
+                if(data.ticker && data.ticker.trim()){
+                    if(ticker.innerHTML != data.ticker) ticker.innerHTML = data.t;
                 } else { ticker.innerHTML = ''; }
 
                 if(data.last_job && data.last_job.id) {
